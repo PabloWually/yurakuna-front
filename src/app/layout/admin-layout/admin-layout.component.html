@@ -1,0 +1,94 @@
+<mat-sidenav-container class="sidenav-container">
+  <!-- Sidebar -->
+  <mat-sidenav 
+    #sidenav
+    [mode]="isMobile() ? 'over' : 'side'"
+    [opened]="sidenavOpened()"
+    class="sidenav">
+    
+    <!-- Logo and Title -->
+    <div class="sidenav-header">
+      <img src="/logo.jpg" alt="Yurakuna Logo" class="logo">
+      <h2 class="app-title">Yurakuna</h2>
+    </div>
+
+    <!-- Navigation Menu -->
+    <mat-nav-list>
+      @for (item of filteredNavItems(); track item.route) {
+        <a 
+          mat-list-item 
+          [routerLink]="item.route"
+          routerLinkActive="active"
+          [routerLinkActiveOptions]="{ exact: item.route === '/dashboard' }"
+          (click)="isMobile() && toggleSidenav()">
+          <mat-icon matListItemIcon>{{ item.icon }}</mat-icon>
+          <span matListItemTitle>{{ item.label }}</span>
+        </a>
+      }
+    </mat-nav-list>
+  </mat-sidenav>
+
+  <!-- Main Content -->
+  <mat-sidenav-content>
+    <!-- Toolbar -->
+    <mat-toolbar color="primary" class="toolbar">
+      <button 
+        mat-icon-button 
+        (click)="toggleSidenav()"
+        [matTooltip]="sidenavOpened() ? 'Cerrar menú' : 'Abrir menú'">
+        <mat-icon>menu</mat-icon>
+      </button>
+
+      <span class="toolbar-spacer"></span>
+
+      <!-- User Menu -->
+      <button mat-button [matMenuTriggerFor]="userMenu" class="user-button">
+        <div class="user-avatar">
+          {{ getUserInitials() }}
+        </div>
+        <span class="user-name">{{ currentUser()?.name }}</span>
+        <mat-icon>arrow_drop_down</mat-icon>
+      </button>
+
+      <mat-menu #userMenu="matMenu" xPosition="before">
+        <div class="user-menu-header">
+          <div class="user-menu-avatar">
+            {{ getUserInitials() }}
+          </div>
+          <div class="user-menu-info">
+            <div class="user-menu-name">{{ currentUser()?.name }}</div>
+            <div class="user-menu-email">{{ currentUser()?.email }}</div>
+            <div class="user-menu-role">
+              <mat-icon>badge</mat-icon>
+              {{ currentUser()?.role }}
+            </div>
+          </div>
+        </div>
+        
+        <mat-divider></mat-divider>
+        
+        <button mat-menu-item disabled>
+          <mat-icon>person</mat-icon>
+          <span>Mi Perfil</span>
+        </button>
+        
+        <button mat-menu-item disabled>
+          <mat-icon>settings</mat-icon>
+          <span>Configuración</span>
+        </button>
+        
+        <mat-divider></mat-divider>
+        
+        <button mat-menu-item (click)="logout()">
+          <mat-icon>logout</mat-icon>
+          <span>Cerrar Sesión</span>
+        </button>
+      </mat-menu>
+    </mat-toolbar>
+
+    <!-- Page Content -->
+    <div class="content">
+      <router-outlet></router-outlet>
+    </div>
+  </mat-sidenav-content>
+</mat-sidenav-container>

@@ -68,3 +68,9 @@ body {
 .p-3 { padding: 24px; }
 .p-4 { padding: 32px; }
 
+// Snackbar customization
+.error-snackbar {
+  --mat-mdc-snack-bar-button-color: #f44336;
+  --mdc-snackbar-supporting-text-color: #f44336;
+}
+
