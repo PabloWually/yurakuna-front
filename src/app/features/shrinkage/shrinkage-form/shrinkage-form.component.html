@@ -1,0 +1,94 @@
+<div class="shrinkage-form-container">
+  <!-- Header -->
+  <div class="page-header">
+    <div class="header-content">
+      <div class="title-section">
+        <h1>
+          <mat-icon>add</mat-icon>
+          Registrar Merma
+        </h1>
+        <p class="subtitle">Registra productos dañados o caducados</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Form Card -->
+  <mat-card class="form-card">
+    <mat-card-content>
+      <form [formGroup]="shrinkageForm" (ngSubmit)="onSubmit()">
+        <!-- Product Field -->
+        <mat-form-field class="full-width" appearance="outline">
+          <mat-label>Producto</mat-label>
+          <mat-select formControlName="productId" required>
+            @for (product of products(); track product.id) {
+              <mat-option [value]="product.id">
+                {{ product.name }}
+              </mat-option>
+            }
+          </mat-select>
+          <mat-icon matPrefix>inventory_2</mat-icon>
+          <mat-error>{{ getErrorMessage('productId') }}</mat-error>
+        </mat-form-field>
+
+        <!-- Quantity Field -->
+        <mat-form-field class="full-width" appearance="outline">
+          <mat-label>Cantidad</mat-label>
+          <input
+            matInput
+            type="number"
+            formControlName="quantity"
+            placeholder="0"
+            step="0.01"
+            min="0"
+            required
+          />
+          <mat-icon matPrefix>123</mat-icon>
+          <mat-error>{{ getErrorMessage('quantity') }}</mat-error>
+          <mat-hint>Cantidad del producto dañado o caducado</mat-hint>
+        </mat-form-field>
+
+        <!-- Cause Field -->
+        <mat-form-field class="full-width" appearance="outline">
+          <mat-label>Causa</mat-label>
+          <mat-select formControlName="cause" required>
+            @for (option of causeOptions; track option.value) {
+              <mat-option [value]="option.value">
+                {{ option.label }}
+              </mat-option>
+            }
+          </mat-select>
+          <mat-icon matPrefix>error_outline</mat-icon>
+          <mat-error>{{ getErrorMessage('cause') }}</mat-error>
+        </mat-form-field>
+
+        <!-- Notes Field -->
+        <mat-form-field class="full-width" appearance="outline">
+          <mat-label>Notas (opcional)</mat-label>
+          <textarea
+            matInput
+            formControlName="notes"
+            placeholder="Detalles adicionales sobre la merma"
+            rows="3"
+          ></textarea>
+          <mat-icon matPrefix>description</mat-icon>
+        </mat-form-field>
+
+        <!-- Form Actions -->
+        <div class="form-actions">
+          <button mat-button type="button" (click)="cancel()">Cancelar</button>
+          <button mat-raised-button color="primary" type="submit" [disabled]="loading()">
+            @if (loading()) {
+              <mat-spinner diameter="20"></mat-spinner>
+              <span class="ml-2">Registrando...</span>
+            } @else {
+              <ng-container>
+                <mat-icon>add</mat-icon>
+                Registrar Merma
+              </ng-container>
+            }
+          </button>
+        </div>
+      </form>
+    </mat-card-content>
+  </mat-card>
+</div>
