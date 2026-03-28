@@ -1,0 +1,146 @@
+<div class="delivery-form-container">
+  <!-- Header -->
+  <div class="page-header">
+    <div class="header-content">
+      <div class="title-section">
+        <h1>
+          <mat-icon>{{ isEditMode() ? 'edit' : 'add' }}</mat-icon>
+          {{ isEditMode() ? 'Editar Entrega' : 'Nueva Entrega' }}
+        </h1>
+        <p class="subtitle">
+          {{
+            isEditMode()
+              ? 'Modifica los datos de la entrega'
+              : 'Completa el formulario para crear una nueva entrega'
+          }}
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Form Card -->
+  <mat-card class="form-card">
+    @if (loading() && isEditMode()) {
+      <div class="loading-container">
+        <mat-spinner diameter="50"></mat-spinner>
+        <p>Cargando entrega...</p>
+      </div>
+    } @else {
+      <mat-card-content>
+        <form [formGroup]="deliveryForm" (ngSubmit)="onSubmit()">
+          <!-- Order ID Field (text input since Orders module not yet implemented) -->
+          <mat-form-field class="full-width" appearance="outline">
+            <mat-label>ID del Pedido</mat-label>
+            <input
+              matInput
+              formControlName="orderId"
+              placeholder="Ingresa el ID del pedido"
+              required
+              [readonly]="isEditMode()"
+            />
+            <mat-icon matPrefix>shopping_cart</mat-icon>
+            <mat-error>{{ getErrorMessage('orderId') }}</mat-error>
+            @if (isEditMode()) {
+              <mat-hint>El pedido no se puede cambiar una vez creado</mat-hint>
+            }
+          </mat-form-field>
+
+          <!-- Client Field -->
+          <mat-form-field class="full-width" appearance="outline">
+            <mat-label>Cliente</mat-label>
+            <mat-select formControlName="clientId" required [disabled]="isEditMode()">
+              @for (client of clients(); track client.id) {
+                <mat-option [value]="client.id">
+                  {{ client.name }} - {{ client.email }}
+                </mat-option>
+              }
+            </mat-select>
+            <mat-icon matPrefix>person</mat-icon>
+            <mat-error>{{ getErrorMessage('clientId') }}</mat-error>
+            @if (isEditMode()) {
+              <mat-hint>El cliente no se puede cambiar una vez creado</mat-hint>
+            }
+          </mat-form-field>
+
+          <!-- Delivery Address Field -->
+          <mat-form-field class="full-width" appearance="outline">
+            <mat-label>Dirección de Entrega</mat-label>
+            <textarea
+              matInput
+              formControlName="deliveryAddress"
+              placeholder="Calle, número, ciudad, código postal"
+              rows="2"
+              required
+              [readonly]="isEditMode()"
+            ></textarea>
+            <mat-icon matPrefix>location_on</mat-icon>
+            <mat-error>{{ getErrorMessage('deliveryAddress') }}</mat-error>
+            @if (isEditMode()) {
+              <mat-hint>La dirección no se puede cambiar una vez creado</mat-hint>
+            }
+          </mat-form-field>
+
+          <!-- Status Field (only in edit mode) -->
+          @if (isEditMode()) {
+            <mat-form-field class="full-width" appearance="outline">
+              <mat-label>Estado</mat-label>
+              <mat-select formControlName="status">
+                @for (option of statusOptions; track option.value) {
+                  <mat-option [value]="option.value">
+                    {{ option.label }}
+                  </mat-option>
+                }
+              </mat-select>
+              <mat-icon matPrefix>local_shipping</mat-icon>
+            </mat-form-field>
+          }
+
+          <!-- Delivered At Field (only in edit mode) -->
+          @if (isEditMode()) {
+            <mat-form-field class="full-width" appearance="outline">
+              <mat-label>Fecha de Entrega</mat-label>
+              <input
+                matInput
+                [matDatepicker]="picker"
+                formControlName="deliveredAt"
+                placeholder="Selecciona fecha y hora"
+              />
+              <mat-datepicker-toggle matSuffix [for]="picker"></mat-datepicker-toggle>
+              <mat-datepicker #picker></mat-datepicker>
+              <mat-icon matPrefix>event</mat-icon>
+              <mat-hint>Opcional - solo si ya fue entregado</mat-hint>
+            </mat-form-field>
+          }
+
+          <!-- Notes Field -->
+          <mat-form-field class="full-width" appearance="outline">
+            <mat-label>Notas (opcional)</mat-label>
+            <textarea
+              matInput
+              formControlName="notes"
+              placeholder="Instrucciones especiales, observaciones, etc."
+              rows="3"
+            ></textarea>
+            <mat-icon matPrefix>note</mat-icon>
+          </mat-form-field>
+
+          <!-- Form Actions -->
+          <div class="form-actions">
+            <button mat-button type="button" (click)="cancel()">Cancelar</button>
+            <button mat-raised-button color="primary" type="submit" [disabled]="loading()">
+              @if (loading()) {
+                <mat-spinner diameter="20"></mat-spinner>
+                <span class="ml-2">{{ isEditMode() ? 'Actualizando...' : 'Creando...' }}</span>
+              } @else {
+                <ng-container>
+                  <mat-icon>{{ isEditMode() ? 'save' : 'add' }}</mat-icon>
+                  {{ isEditMode() ? 'Actualizar' : 'Crear Entrega' }}
+                </ng-container>
+              }
+            </button>
+          </div>
+        </form>
+      </mat-card-content>
+    }
+  </mat-card>
+</div>

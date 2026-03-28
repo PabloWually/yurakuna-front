@@ -1,0 +1,145 @@
+<div class="user-list-container">
+  <!-- Header -->
+  <div class="page-header">
+    <div class="header-content">
+      <div class="title-section">
+        <h1>
+          <mat-icon>people</mat-icon>
+          Usuarios
+        </h1>
+        <p class="subtitle">Gestión de usuarios del sistema</p>
+      </div>
+      <button mat-raised-button color="primary" (click)="createUser()">
+        <mat-icon>add</mat-icon>
+        Nuevo Usuario
+      </button>
+    </div>
+  </div>
+
+  <!-- Search and Filters -->
+  <mat-card class="search-card">
+    <mat-card-content>
+      <form [formGroup]="searchForm">
+        <mat-form-field class="search-field" appearance="outline">
+          <mat-label>Buscar usuarios</mat-label>
+          <input matInput formControlName="search" placeholder="Nombre del usuario..." />
+          <mat-icon matPrefix>search</mat-icon>
+          @if (searchForm.get('search')?.value) {
+            <button
+              mat-icon-button
+              matSuffix
+              type="button"
+              (click)="searchForm.patchValue({ search: '' })"
+              matTooltip="Limpiar búsqueda"
+            >
+              <mat-icon>close</mat-icon>
+            </button>
+          }
+        </mat-form-field>
+      </form>
+    </mat-card-content>
+  </mat-card>
+
+  <!-- Users Table -->
+  <mat-card class="table-card">
+    @if (loading()) {
+      <div class="loading-container">
+        <mat-spinner diameter="50"></mat-spinner>
+        <p>Cargando usuarios...</p>
+      </div>
+    } @else if (users().length === 0) {
+      <div class="empty-state">
+        <mat-icon>people</mat-icon>
+        <h2>No hay usuarios</h2>
+        <p>
+          @if (searchForm.get('search')?.value) {
+            No se encontraron usuarios con ese criterio de búsqueda.
+          } @else {
+            Comienza creando tu primer usuario.
+          }
+        </p>
+        <button mat-raised-button color="primary" (click)="createUser()">
+          <mat-icon>add</mat-icon>
+          Crear Usuario
+        </button>
+      </div>
+    } @else {
+      <div class="table-container">
+        <table mat-table [dataSource]="users()" class="users-table">
+          <!-- Name Column -->
+          <ng-container matColumnDef="name">
+            <th mat-header-cell *matHeaderCellDef>Nombre</th>
+            <td mat-cell *matCellDef="let user">
+              <strong>{{ user.name }}</strong>
+            </td>
+          </ng-container>
+
+          <!-- Email Column -->
+          <ng-container matColumnDef="email">
+            <th mat-header-cell *matHeaderCellDef>Email</th>
+            <td mat-cell *matCellDef="let user">
+              {{ user.email }}
+            </td>
+          </ng-container>
+
+          <!-- Role Column -->
+          <ng-container matColumnDef="role">
+            <th mat-header-cell *matHeaderCellDef>Rol</th>
+            <td mat-cell *matCellDef="let user">
+              <mat-chip [color]="getRoleColor(user.role)">
+                {{ getRoleLabel(user.role) }}
+              </mat-chip>
+            </td>
+          </ng-container>
+
+          <!-- Created At Column -->
+          <ng-container matColumnDef="createdAt">
+            <th mat-header-cell *matHeaderCellDef>Creado</th>
+            <td mat-cell *matCellDef="let user">
+              {{ formatDate(user.createdAt) }}
+            </td>
+          </ng-container>
+
+          <!-- Actions Column -->
+          <ng-container matColumnDef="actions">
+            <th mat-header-cell *matHeaderCellDef>Acciones</th>
+            <td mat-cell *matCellDef="let user">
+              <div class="actions-cell">
+                <button
+                  mat-icon-button
+                  color="primary"
+                  (click)="editUser(user)"
+                  matTooltip="Editar"
+                >
+                  <mat-icon>edit</mat-icon>
+                </button>
+                <button
+                  mat-icon-button
+                  color="warn"
+                  (click)="deleteUser(user)"
+                  matTooltip="Eliminar"
+                >
+                  <mat-icon>delete</mat-icon>
+                </button>
+              </div>
+            </td>
+          </ng-container>
+
+          <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+          <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
+        </table>
+      </div>
+
+      <!-- Paginator -->
+      <mat-paginator
+        [length]="totalItems()"
+        [pageSize]="pageSize()"
+        [pageIndex]="pageIndex()"
+        [pageSizeOptions]="[5, 10, 25, 50]"
+        (page)="onPageChange($event)"
+        showFirstLastButtons
+      >
+      </mat-paginator>
+    }
+  </mat-card>
+</div>
