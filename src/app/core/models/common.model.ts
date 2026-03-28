@@ -14,14 +14,14 @@ export interface Filter {
 
 // Criteria interface for list endpoints (POST /api/*/list)
 export interface Criteria {
-  limit?: number;     // Default: 10
-  offset?: number;    // Default: 0
+  limit?: number; // Default: 10
+  offset?: number; // Default: 0
   filters?: Filter[]; // Optional
 }
 
 // Generic paginated response
 export interface PaginatedResponse<T> {
-  items: T[];
+  data: T[]; // API returns 'data' not 'items'
   total: number;
   limit: number;
   offset: number;

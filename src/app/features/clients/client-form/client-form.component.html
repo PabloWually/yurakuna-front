@@ -1,0 +1,96 @@
+<div class="client-form-container">
+  <!-- Header -->
+  <div class="page-header">
+    <div class="header-content">
+      <div class="title-section">
+        <h1>
+          <mat-icon>{{ isEditMode() ? 'edit' : 'add' }}</mat-icon>
+          {{ isEditMode() ? 'Editar Cliente' : 'Nuevo Cliente' }}
+        </h1>
+        <p class="subtitle">
+          {{
+            isEditMode()
+              ? 'Modifica los datos del cliente'
+              : 'Completa el formulario para crear un nuevo cliente'
+          }}
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Form Card -->
+  <mat-card class="form-card">
+    @if (loading() && isEditMode()) {
+      <div class="loading-container">
+        <mat-spinner diameter="50"></mat-spinner>
+        <p>Cargando cliente...</p>
+      </div>
+    } @else {
+      <mat-card-content>
+        <form [formGroup]="clientForm" (ngSubmit)="onSubmit()">
+          <!-- Name Field -->
+          <mat-form-field class="full-width" appearance="outline">
+            <mat-label>Nombre del Cliente</mat-label>
+            <input
+              matInput
+              formControlName="name"
+              placeholder="Ej: Juan Pérez, Restaurante El Buen Sabor, etc."
+              required
+            />
+            <mat-icon matPrefix>person</mat-icon>
+            <mat-error>{{ getErrorMessage('name') }}</mat-error>
+          </mat-form-field>
+
+          <!-- Email Field -->
+          <mat-form-field class="full-width" appearance="outline">
+            <mat-label>Email</mat-label>
+            <input
+              matInput
+              type="email"
+              formControlName="email"
+              placeholder="cliente@ejemplo.com"
+              required
+            />
+            <mat-icon matPrefix>email</mat-icon>
+            <mat-error>{{ getErrorMessage('email') }}</mat-error>
+          </mat-form-field>
+
+          <!-- Phone Field -->
+          <mat-form-field class="full-width" appearance="outline">
+            <mat-label>Teléfono (opcional)</mat-label>
+            <input matInput type="tel" formControlName="phone" placeholder="+34 600 123 456" />
+            <mat-icon matPrefix>phone</mat-icon>
+          </mat-form-field>
+
+          <!-- Address Field -->
+          <mat-form-field class="full-width" appearance="outline">
+            <mat-label>Dirección (opcional)</mat-label>
+            <textarea
+              matInput
+              formControlName="address"
+              placeholder="Calle, número, ciudad, código postal"
+              rows="3"
+            ></textarea>
+            <mat-icon matPrefix>location_on</mat-icon>
+          </mat-form-field>
+
+          <!-- Form Actions -->
+          <div class="form-actions">
+            <button mat-button type="button" (click)="cancel()">Cancelar</button>
+            <button mat-raised-button color="primary" type="submit" [disabled]="loading()">
+              @if (loading()) {
+                <mat-spinner diameter="20"></mat-spinner>
+                <span class="ml-2">{{ isEditMode() ? 'Actualizando...' : 'Creando...' }}</span>
+              } @else {
+                <ng-container>
+                  <mat-icon>{{ isEditMode() ? 'save' : 'add' }}</mat-icon>
+                  {{ isEditMode() ? 'Actualizar' : 'Crear Cliente' }}
+                </ng-container>
+              }
+            </button>
+          </div>
+        </form>
+      </mat-card-content>
+    }
+  </mat-card>
+</div>

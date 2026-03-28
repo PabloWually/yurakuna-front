@@ -1,0 +1,123 @@
+<div class="product-form-container">
+  <!-- Header -->
+  <div class="page-header">
+    <div class="header-content">
+      <div class="title-section">
+        <h1>
+          <mat-icon>{{ isEditMode() ? 'edit' : 'add' }}</mat-icon>
+          {{ isEditMode() ? 'Editar Producto' : 'Nuevo Producto' }}
+        </h1>
+        <p class="subtitle">
+          {{
+            isEditMode()
+              ? 'Modifica los datos del producto'
+              : 'Completa el formulario para crear un nuevo producto'
+          }}
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Form Card -->
+  <mat-card class="form-card">
+    @if (loading() && isEditMode()) {
+      <div class="loading-container">
+        <mat-spinner diameter="50"></mat-spinner>
+        <p>Cargando producto...</p>
+      </div>
+    } @else {
+      <mat-card-content>
+        <form [formGroup]="productForm" (ngSubmit)="onSubmit()">
+          <!-- Name Field -->
+          <mat-form-field class="full-width" appearance="outline">
+            <mat-label>Nombre del Producto</mat-label>
+            <input
+              matInput
+              formControlName="name"
+              placeholder="Ej: Tomate, Lechuga, etc."
+              required
+            />
+            <mat-icon matPrefix>label</mat-icon>
+            <mat-error>{{ getErrorMessage('name') }}</mat-error>
+          </mat-form-field>
+
+          <!-- Description Field -->
+          <mat-form-field class="full-width" appearance="outline">
+            <mat-label>Descripción (opcional)</mat-label>
+            <textarea
+              matInput
+              formControlName="description"
+              placeholder="Descripción breve del producto"
+              rows="3"
+            ></textarea>
+            <mat-icon matPrefix>description</mat-icon>
+          </mat-form-field>
+
+          <!-- Unit Field -->
+          <mat-form-field class="full-width" appearance="outline">
+            <mat-label>Unidad de Medida</mat-label>
+            <mat-select formControlName="unit" required>
+              @for (option of unitOptions; track option.value) {
+                <mat-option [value]="option.value">
+                  {{ option.label }}
+                </mat-option>
+              }
+            </mat-select>
+            <mat-icon matPrefix>straighten</mat-icon>
+            <mat-error>{{ getErrorMessage('unit') }}</mat-error>
+          </mat-form-field>
+
+          <!-- Price Field -->
+          <mat-form-field class="full-width" appearance="outline">
+            <mat-label>Precio por Unidad</mat-label>
+            <input
+              matInput
+              type="number"
+              formControlName="pricePerUnit"
+              placeholder="0.00"
+              step="0.01"
+              min="0"
+              required
+            />
+            <span matPrefix>€&nbsp;</span>
+            <mat-icon matPrefix>euro</mat-icon>
+            <mat-error>{{ getErrorMessage('pricePerUnit') }}</mat-error>
+            <mat-hint>Precio en euros</mat-hint>
+          </mat-form-field>
+
+          <!-- Current Stock Field -->
+          <mat-form-field class="full-width" appearance="outline">
+            <mat-label>Stock Actual</mat-label>
+            <input
+              matInput
+              type="number"
+              formControlName="currentStock"
+              placeholder="0"
+              min="0"
+              required
+            />
+            <mat-icon matPrefix>inventory</mat-icon>
+            <mat-error>{{ getErrorMessage('currentStock') }}</mat-error>
+            <mat-hint>Cantidad disponible en inventario</mat-hint>
+          </mat-form-field>
+
+          <!-- Form Actions -->
+          <div class="form-actions">
+            <button mat-button type="button" (click)="cancel()">Cancelar</button>
+            <button mat-raised-button color="primary" type="submit" [disabled]="loading()">
+              @if (loading()) {
+                <mat-spinner diameter="20"></mat-spinner>
+                <span class="ml-2">{{ isEditMode() ? 'Actualizando...' : 'Creando...' }}</span>
+              } @else {
+                <ng-container>
+                  <mat-icon>{{ isEditMode() ? 'save' : 'add' }}</mat-icon>
+                  {{ isEditMode() ? 'Actualizar' : 'Crear Producto' }}
+                </ng-container>
+              }
+            </button>
+          </div>
+        </form>
+      </mat-card-content>
+    }
+  </mat-card>
+</div>
