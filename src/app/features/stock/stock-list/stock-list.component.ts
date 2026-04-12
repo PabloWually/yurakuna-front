@@ -54,7 +54,15 @@ export class StockListComponent implements OnInit {
   searchForm: FormGroup;
 
   // Table columns
-  displayedColumns = ['product', 'type', 'quantity', 'reason', 'createdAt'];
+  displayedColumns = [
+    'product',
+    'type',
+    'quantity',
+    'quantityBefore',
+    'quantityAfter',
+    'reason',
+    'createdAt',
+  ];
 
   // Type labels for display
   typeLabels: Record<string, string> = {

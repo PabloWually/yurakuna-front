@@ -10,6 +10,8 @@ export interface StockMovement {
   productId: string;
   type: StockMovementType;
   quantity: number;
+  quantityBefore: number | null;
+  quantityAfter: number | null;
   reason?: string | null;
   purchaseId: string | null; // Origin: purchase that generated this movement
   deliveryId: string | null; // Origin: delivery that generated this movement
