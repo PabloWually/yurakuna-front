@@ -1,0 +1,27 @@
+meta {
+  name: Update Provider
+  type: http
+  seq: 4
+}
+
+patch {
+  url: {{baseUrl}}/api/providers/:id
+  body: json
+  auth: bearer
+}
+
+params:path {
+  id: 00000000-0000-0000-0000-000000000000
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+body:json {
+  {
+    "name": "Proveedor Central S.A. (actualizado)",
+    "phone": "+51 999 000 111",
+    "isActive": true
+  }
+}

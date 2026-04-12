@@ -33,10 +33,10 @@ interface NavItem {
     MatIconModule,
     MatButtonModule,
     MatMenuModule,
-    MatTooltipModule
+    MatTooltipModule,
   ],
   templateUrl: './admin-layout.component.html',
-  styleUrl: './admin-layout.component.scss'
+  styleUrl: './admin-layout.component.scss',
 })
 export class AdminLayoutComponent {
   private authService = inject(AuthService);
@@ -55,7 +55,9 @@ export class AdminLayoutComponent {
     { label: 'Entregas', route: '/deliveries', icon: 'local_shipping' },
     { label: 'Stock', route: '/stock', icon: 'warehouse' },
     { label: 'Merma', route: '/shrinkage', icon: 'report_problem' },
-    { label: 'Usuarios', route: '/users', icon: 'manage_accounts', roles: ['admin'] }
+    { label: 'Proveedores', route: '/providers', icon: 'business' },
+    { label: 'Compras', route: '/purchases', icon: 'shopping_bag' },
+    { label: 'Usuarios', route: '/users', icon: 'manage_accounts', roles: ['admin'] },
   ];
 
   // Filter nav items based on user role
@@ -63,7 +65,7 @@ export class AdminLayoutComponent {
     const user = this.currentUser();
     if (!user) return [];
 
-    return this.navItems.filter(item => {
+    return this.navItems.filter((item) => {
       if (!item.roles) return true;
       return item.roles.includes(user.role);
     });
@@ -74,15 +76,14 @@ export class AdminLayoutComponent {
 
   constructor() {
     // Observe breakpoints for responsive behavior
-    this.breakpointObserver.observe([Breakpoints.Handset])
-      .subscribe(result => {
-        this.isMobile.set(result.matches);
-        if (result.matches) {
-          this.sidenavOpened.set(false);
-        } else {
-          this.sidenavOpened.set(true);
-        }
-      });
+    this.breakpointObserver.observe([Breakpoints.Handset]).subscribe((result) => {
+      this.isMobile.set(result.matches);
+      if (result.matches) {
+        this.sidenavOpened.set(false);
+      } else {
+        this.sidenavOpened.set(true);
+      }
+    });
   }
 
   toggleSidenav(): void {
@@ -96,7 +97,7 @@ export class AdminLayoutComponent {
   getUserInitials(): string {
     const user = this.currentUser();
     if (!user) return '';
-    
+
     const names = user.name.split(' ');
     if (names.length >= 2) {
       return `${names[0][0]}${names[1][0]}`.toUpperCase();

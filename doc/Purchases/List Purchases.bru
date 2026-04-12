@@ -1,0 +1,32 @@
+meta {
+  name: List Purchases
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/api/purchases/list
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+body:json {
+  {
+    "offset": 0,
+    "limit": 10,
+    "filters": []
+  }
+}
+
+docs {
+  List purchases with pagination and optional filters.
+
+  Available filter fields: providerId, status, createdById, isActive, createdAt
+  Operators: eq, neq, like, ilike, gt, gte, lt, lte
+
+  Each result includes the related provider and item count.
+}

@@ -1,0 +1,180 @@
+<div class="purchase-list-container">
+  <!-- Header -->
+  <div class="page-header">
+    <div class="header-content">
+      <div class="title-section">
+        <h1>
+          <mat-icon>shopping_bag</mat-icon>
+          Compras
+        </h1>
+        <p class="subtitle">Gestión de compras a proveedores</p>
+      </div>
+      <button mat-raised-button color="primary" (click)="createPurchase()">
+        <mat-icon>add</mat-icon>
+        Nueva Compra
+      </button>
+    </div>
+  </div>
+
+  <!-- Search and Filters -->
+  <mat-card class="search-card">
+    <mat-card-content>
+      <form [formGroup]="searchForm">
+        <mat-form-field class="search-field" appearance="outline">
+          <mat-label>Buscar compras</mat-label>
+          <input matInput formControlName="search" placeholder="ID del proveedor..." />
+          <mat-icon matPrefix>search</mat-icon>
+          @if (searchForm.get('search')?.value) {
+            <button
+              mat-icon-button
+              matSuffix
+              type="button"
+              (click)="searchForm.patchValue({ search: '' })"
+              matTooltip="Limpiar búsqueda"
+            >
+              <mat-icon>close</mat-icon>
+            </button>
+          }
+        </mat-form-field>
+      </form>
+    </mat-card-content>
+  </mat-card>
+
+  <!-- Purchases Table -->
+  <mat-card class="table-card">
+    @if (loading()) {
+      <div class="loading-container">
+        <mat-spinner diameter="50"></mat-spinner>
+        <p>Cargando compras...</p>
+      </div>
+    } @else if (purchases().length === 0) {
+      <div class="empty-state">
+        <mat-icon>shopping_bag</mat-icon>
+        <h2>No hay compras</h2>
+        <p>
+          @if (searchForm.get('search')?.value) {
+            No se encontraron compras con ese criterio de búsqueda.
+          } @else {
+            Comienza creando tu primera compra.
+          }
+        </p>
+        <button mat-raised-button color="primary" (click)="createPurchase()">
+          <mat-icon>add</mat-icon>
+          Crear Compra
+        </button>
+      </div>
+    } @else {
+      <div class="table-container">
+        <table mat-table [dataSource]="purchases()" class="purchases-table">
+          <!-- Purchase ID Column -->
+          <ng-container matColumnDef="id">
+            <th mat-header-cell *matHeaderCellDef>Compra</th>
+            <td mat-cell *matCellDef="let purchase">
+              <button
+                mat-button
+                color="primary"
+                class="purchase-id-btn"
+                (click)="viewPurchase(purchase)"
+              >
+                <strong>#{{ purchase.id | slice: 0 : 8 }}</strong>
+              </button>
+            </td>
+          </ng-container>
+
+          <!-- Provider Column -->
+          <ng-container matColumnDef="provider">
+            <th mat-header-cell *matHeaderCellDef>Proveedor</th>
+            <td mat-cell *matCellDef="let purchase">
+              {{ purchase.provider?.name || purchase.providerId }}
+            </td>
+          </ng-container>
+
+          <!-- Items Count Column -->
+          <ng-container matColumnDef="itemsCount">
+            <th mat-header-cell *matHeaderCellDef>Productos</th>
+            <td mat-cell *matCellDef="let purchase">
+              <mat-chip>
+                {{ purchase.items.length }} producto{{ purchase.items.length !== 1 ? 's' : '' }}
+              </mat-chip>
+            </td>
+          </ng-container>
+
+          <!-- Total Column -->
+          <ng-container matColumnDef="total">
+            <th mat-header-cell *matHeaderCellDef>Total</th>
+            <td mat-cell *matCellDef="let purchase">
+              <strong class="total-amount">{{
+                purchase.totalAmount | currency: 'USD' : 'symbol' : '1.2-2'
+              }}</strong>
+            </td>
+          </ng-container>
+
+          <!-- Status Column -->
+          <ng-container matColumnDef="status">
+            <th mat-header-cell *matHeaderCellDef>Estado</th>
+            <td mat-cell *matCellDef="let purchase">
+              <mat-chip [color]="getStatusColor(purchase.status)">
+                {{ getStatusLabel(purchase.status) }}
+              </mat-chip>
+            </td>
+          </ng-container>
+
+          <!-- Created At Column -->
+          <ng-container matColumnDef="createdAt">
+            <th mat-header-cell *matHeaderCellDef>Creado</th>
+            <td mat-cell *matCellDef="let purchase">
+              {{ formatDate(purchase.createdAt) }}
+            </td>
+          </ng-container>
+
+          <!-- Actions Column -->
+          <ng-container matColumnDef="actions">
+            <th mat-header-cell *matHeaderCellDef>Acciones</th>
+            <td mat-cell *matCellDef="let purchase">
+              <div class="actions-cell">
+                <button
+                  mat-icon-button
+                  color="primary"
+                  (click)="viewPurchase(purchase)"
+                  matTooltip="Ver detalle"
+                >
+                  <mat-icon>visibility</mat-icon>
+                </button>
+                <button
+                  mat-icon-button
+                  color="primary"
+                  (click)="editPurchase(purchase)"
+                  matTooltip="Editar"
+                >
+                  <mat-icon>edit</mat-icon>
+                </button>
+                <button
+                  mat-icon-button
+                  color="warn"
+                  (click)="deletePurchase(purchase)"
+                  matTooltip="Eliminar"
+                >
+                  <mat-icon>delete</mat-icon>
+                </button>
+              </div>
+            </td>
+          </ng-container>
+
+          <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+          <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
+        </table>
+      </div>
+
+      <!-- Paginator -->
+      <mat-paginator
+        [length]="totalItems()"
+        [pageSize]="pageSize()"
+        [pageIndex]="pageIndex()"
+        [pageSizeOptions]="[5, 10, 25, 50]"
+        (page)="onPageChange($event)"
+        showFirstLastButtons
+      >
+      </mat-paginator>
+    }
+  </mat-card>
+</div>

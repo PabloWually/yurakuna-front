@@ -44,3 +44,6 @@ export type StockMovementType = 'in' | 'out' | 'adjustment' | 'shrinkage';
 
 // Shrinkage causes
 export type ShrinkageCause = 'damaged' | 'expired';
+
+// Purchase status
+export type PurchaseStatus = 'draft' | 'confirmed' | 'cancelled';

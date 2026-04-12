@@ -61,7 +61,18 @@ export const routes: Routes = [
         path: 'users',
         loadChildren: () => import('./features/users/users.routes').then((m) => m.USERS_ROUTES),
       },
-      // TODO: Add more feature routes here as they are developed
+      {
+        path: 'providers',
+        loadChildren: () =>
+          import('./features/providers/providers.routes').then((m) => m.PROVIDERS_ROUTES),
+      },
+      {
+        path: 'purchases',
+        loadChildren: () =>
+          import('./features/purchases/purchases.routes').then((m) => m.PURCHASES_ROUTES),
+      },
+    ],
+  },
     ],
   },
 

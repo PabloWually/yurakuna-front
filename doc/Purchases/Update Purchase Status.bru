@@ -1,0 +1,34 @@
+meta {
+  name: Update Purchase Status
+  type: http
+  seq: 4
+}
+
+patch {
+  url: {{baseUrl}}/api/purchases/:id
+  body: json
+  auth: bearer
+}
+
+params:path {
+  id: 00000000-0000-0000-0000-000000000000
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+body:json {
+  {
+    "status": "confirmed"
+  }
+}
+
+docs {
+  Update the status of a purchase.
+
+  Valid statuses:
+  - draft      → initial state
+  - confirmed  → purchase approved
+  - cancelled  → purchase cancelled
+}

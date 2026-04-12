@@ -1,0 +1,30 @@
+meta {
+  name: List Providers
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/api/providers/list
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+body:json {
+  {
+    "offset": 0,
+    "limit": 10,
+    "filters": []
+  }
+}
+
+docs {
+  List providers with pagination and optional filters.
+
+  Available filter fields: name, email, phone, isActive, createdAt
+  Operators: eq, neq, like, ilike
+}

@@ -22,3 +22,9 @@ export * from './delivery.model';
 
 // Stock models
 export * from './stock.model';
+
+// Provider models
+export * from './provider.model';
+
+// Purchase models
+export * from './purchase.model';

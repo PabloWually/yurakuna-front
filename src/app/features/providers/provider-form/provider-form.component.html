@@ -1,0 +1,103 @@
+<div class="provider-form-container">
+  <!-- Header -->
+  <div class="page-header">
+    <div class="header-content">
+      <div class="title-section">
+        <h1>
+          <mat-icon>{{ isEditMode() ? 'edit' : 'add' }}</mat-icon>
+          {{ isEditMode() ? 'Editar Proveedor' : 'Nuevo Proveedor' }}
+        </h1>
+        <p class="subtitle">
+          {{
+            isEditMode()
+              ? 'Modifica los datos del proveedor'
+              : 'Completa el formulario para crear un nuevo proveedor'
+          }}
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Form Card -->
+  <mat-card class="form-card">
+    @if (loading() && isEditMode()) {
+      <div class="loading-container">
+        <mat-spinner diameter="50"></mat-spinner>
+        <p>Cargando proveedor...</p>
+      </div>
+    } @else {
+      <mat-card-content>
+        <form [formGroup]="providerForm" (ngSubmit)="onSubmit()">
+          <!-- Name Field -->
+          <mat-form-field class="full-width" appearance="outline">
+            <mat-label>Nombre del Proveedor</mat-label>
+            <input
+              matInput
+              formControlName="name"
+              placeholder="Ej: Proveedor ABC, Distribuidora XYZ, etc."
+              required
+            />
+            <mat-icon matPrefix>business</mat-icon>
+            <mat-error>{{ getErrorMessage('name') }}</mat-error>
+          </mat-form-field>
+
+          <!-- Email Field -->
+          <mat-form-field class="full-width" appearance="outline">
+            <mat-label>Email</mat-label>
+            <input
+              matInput
+              type="email"
+              formControlName="email"
+              placeholder="proveedor@ejemplo.com"
+              required
+            />
+            <mat-icon matPrefix>email</mat-icon>
+            <mat-error>{{ getErrorMessage('email') }}</mat-error>
+          </mat-form-field>
+
+          <!-- Phone Field -->
+          <mat-form-field class="full-width" appearance="outline">
+            <mat-label>Teléfono (opcional)</mat-label>
+            <input matInput type="tel" formControlName="phone" placeholder="+34 600 123 456" />
+            <mat-icon matPrefix>phone</mat-icon>
+          </mat-form-field>
+
+          <!-- Address Field -->
+          <mat-form-field class="full-width" appearance="outline">
+            <mat-label>Dirección (opcional)</mat-label>
+            <textarea
+              matInput
+              formControlName="address"
+              placeholder="Calle, número, ciudad, código postal"
+              rows="3"
+            ></textarea>
+            <mat-icon matPrefix>location_on</mat-icon>
+          </mat-form-field>
+
+          <!-- isActive Field (only in edit mode) -->
+          @if (isEditMode()) {
+            <div class="checkbox-field">
+              <mat-checkbox formControlName="isActive">Activo</mat-checkbox>
+            </div>
+          }
+
+          <!-- Form Actions -->
+          <div class="form-actions">
+            <button mat-button type="button" (click)="cancel()">Cancelar</button>
+            <button mat-raised-button color="primary" type="submit" [disabled]="loading()">
+              @if (loading()) {
+                <mat-spinner diameter="20"></mat-spinner>
+                <span class="ml-2">{{ isEditMode() ? 'Actualizando...' : 'Creando...' }}</span>
+              } @else {
+                <ng-container>
+                  <mat-icon>{{ isEditMode() ? 'save' : 'add' }}</mat-icon>
+                  {{ isEditMode() ? 'Actualizar' : 'Crear Proveedor' }}
+                </ng-container>
+              }
+            </button>
+          </div>
+        </form>
+      </mat-card-content>
+    }
+  </mat-card>
+</div>
