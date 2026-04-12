@@ -73,8 +73,6 @@ export const routes: Routes = [
       },
     ],
   },
-    ],
-  },
 
   // Unauthorized page
   {
