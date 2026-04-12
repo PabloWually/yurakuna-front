@@ -1,6 +1,13 @@
 import { Component, inject, signal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormBuilder, FormGroup, FormArray, ReactiveFormsModule, Validators } from '@angular/forms';
+import {
+  FormBuilder,
+  FormGroup,
+  FormArray,
+  AbstractControl,
+  ReactiveFormsModule,
+  Validators,
+} from '@angular/forms';
 import { Router, ActivatedRoute } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -66,6 +73,12 @@ export class OrderFormComponent implements OnInit {
 
   // Order total
   orderTotal = signal(0);
+
+  // Reactive list of item controls for mat-table dataSource
+  itemControlsList = signal<AbstractControl[]>([]);
+
+  // Track selected product IDs to prevent duplicates
+  selectedProductIds = signal<Set<string>>(new Set());
 
   // Status options (only for edit mode)
   statusOptions: Array<{ value: string; label: string }> = [
@@ -133,6 +146,7 @@ export class OrderFormComponent implements OnInit {
         });
         this.calculateTotal();
       }
+      this.refreshSelectedProductIds();
     });
 
     // Listen to quantity changes to recalculate total
@@ -148,6 +162,9 @@ export class OrderFormComponent implements OnInit {
    */
   addItem(): void {
     this.items.push(this.createItemFormGroup());
+    this.itemControlsList.set([...this.items.controls]);
+    this.refreshSelectedProductIds();
+    console.log(this.items);
   }
 
   /**
@@ -155,7 +172,30 @@ export class OrderFormComponent implements OnInit {
    */
   removeItem(index: number): void {
     this.items.removeAt(index);
+    this.itemControlsList.set([...this.items.controls]);
+    this.refreshSelectedProductIds();
     this.calculateTotal();
+  }
+
+  /**
+   * Refresh the set of selected product IDs (to prevent duplicates)
+   */
+  refreshSelectedProductIds(): void {
+    const ids = new Set(
+      this.items.controls
+        .map((ctrl) => ctrl.get('productId')?.value as string)
+        .filter((id) => !!id),
+    );
+    this.selectedProductIds.set(ids);
+  }
+
+  /**
+   * Get products available for a given row (excludes products selected in other rows)
+   */
+  getAvailableProducts(currentIndex: number): Product[] {
+    const currentSelection = this.items.at(currentIndex)?.get('productId')?.value as string;
+    const selected = this.selectedProductIds();
+    return this.products().filter((p) => p.id === currentSelection || !selected.has(p.id));
   }
 
   /**
@@ -232,6 +272,8 @@ export class OrderFormComponent implements OnInit {
         order.items.forEach((item) => {
           this.items.push(this.createItemFormGroup(item));
         });
+        this.itemControlsList.set([...this.items.controls]);
+        this.refreshSelectedProductIds();
 
         this.calculateTotal();
         this.loading.set(false);

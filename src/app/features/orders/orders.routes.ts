@@ -19,4 +19,10 @@ export const ORDERS_ROUTES: Routes = [
       import('./order-form/order-form.component').then((m) => m.OrderFormComponent),
     title: 'Editar Pedido - Yurakuna',
   },
+  {
+    path: ':id',
+    loadComponent: () =>
+      import('./order-detail/order-detail.component').then((m) => m.OrderDetailComponent),
+    title: 'Detalle de Pedido - Yurakuna',
+  },
 ];

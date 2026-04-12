@@ -203,9 +203,9 @@ export class ProductListComponent implements OnInit {
    * Format price for display
    */
   formatPrice(price: number): string {
-    return new Intl.NumberFormat('es-ES', {
+    return new Intl.NumberFormat('en-US', {
       style: 'currency',
-      currency: 'EUR',
+      currency: 'USD',
     }).format(price);
   }
 

@@ -7,6 +7,7 @@ import {
   UpdateOrderRequest,
   Criteria,
   PaginatedResponse,
+  OrderDetail,
 } from '../../../core/models';
 
 @Injectable({
@@ -19,8 +20,8 @@ export class OrderService {
   /**
    * Get a single order by ID
    */
-  getOrder(id: string): Observable<Order> {
-    return this.apiService.get<Order>(`${this.BASE_URL}/${id}`);
+  getOrder(id: string): Observable<OrderDetail> {
+    return this.apiService.get<OrderDetail>(`${this.BASE_URL}/${id}`);
   }
 
   /**

@@ -122,6 +122,13 @@
         color: rgba(0, 0, 0, 0.87);
       }
 
+      .order-id-btn {
+        padding: 0 4px;
+        min-width: unset;
+        text-decoration: underline;
+        cursor: pointer;
+      }
+
       .total-amount {
         color: #4caf50;
         font-size: 16px;

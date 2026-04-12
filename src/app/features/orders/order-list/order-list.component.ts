@@ -110,8 +110,8 @@ export class OrderListComponent implements OnInit {
     if (searchTerm) {
       criteria.filters?.push({
         field: 'clientId',
-        operator: 'ilike',
-        value: `%${searchTerm}%`,
+        operator: 'eq',
+        value: searchTerm,
       });
     }
 
@@ -146,6 +146,13 @@ export class OrderListComponent implements OnInit {
    */
   createOrder(): void {
     this.router.navigate(['/orders/new']);
+  }
+
+  /**
+   * Navigate to order detail page
+   */
+  viewOrder(order: Order): void {
+    this.router.navigate(['/orders', order.id]);
   }
 
   /**
@@ -215,8 +222,8 @@ export class OrderListComponent implements OnInit {
    * Format currency
    */
   formatCurrency(amount: number | undefined): string {
-    if (amount === undefined || amount === null) return '€0.00';
-    return `€${amount.toFixed(2)}`;
+    if (amount === undefined || amount === null) return '$0.00';
+    return `$${amount.toFixed(2)}`;
   }
 
   /**

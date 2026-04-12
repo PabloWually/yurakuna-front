@@ -1,3 +1,4 @@
+import { Client } from './client.model';
 import { OrderStatus } from './common.model';
 
 /**
@@ -22,6 +23,11 @@ export interface Order {
   totalAmount?: number;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface OrderDetail extends Order {
+  items: OrderItem[];
+  client: Client;
 }
 
 // Create order request
