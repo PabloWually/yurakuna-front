@@ -7,6 +7,7 @@ import { OrderStatus } from './common.model';
 
 // Order item interface
 export interface OrderItem {
+  id?: string; // Present in API responses, needed for delivery orderItemId
   productId: string;
   quantity: number;
   pricePerUnit?: number;

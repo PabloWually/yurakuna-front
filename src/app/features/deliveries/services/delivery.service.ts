@@ -3,6 +3,7 @@ import { Observable } from 'rxjs';
 import { ApiService } from '../../../core/services/api.service';
 import {
   Delivery,
+  DeliveryWithItems,
   CreateDeliveryRequest,
   UpdateDeliveryRequest,
   Criteria,
@@ -20,10 +21,10 @@ export class DeliveryService {
   private readonly BASE_PATH = '/deliveries';
 
   /**
-   * Get a single delivery by ID
+   * Get a single delivery by ID — returns DeliveryWithItems
    */
-  getDelivery(id: string): Observable<Delivery> {
-    return this.api.get<Delivery>(`${this.BASE_PATH}/${id}`);
+  getDelivery(id: string): Observable<DeliveryWithItems> {
+    return this.api.get<DeliveryWithItems>(`${this.BASE_PATH}/${id}`);
   }
 
   /**

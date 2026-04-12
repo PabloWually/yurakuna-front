@@ -10,7 +10,11 @@ export interface StockMovement {
   productId: string;
   type: StockMovementType;
   quantity: number;
-  reason?: string;
+  reason?: string | null;
+  purchaseId: string | null; // Origin: purchase that generated this movement
+  deliveryId: string | null; // Origin: delivery that generated this movement
+  shrinkageId: string | null; // Origin: shrinkage that generated this movement
+  isActive: boolean;
   createdAt: string;
 }
 
@@ -26,9 +30,10 @@ export interface CreateStockMovementRequest {
 export interface Shrinkage {
   id: string;
   productId: string;
-  quantity: number;
+  quantity: number; // API may return as string "5.00"
   cause: ShrinkageCause;
-  notes?: string;
+  notes?: string | null;
+  isActive: boolean;
   createdAt: string;
 }
 
