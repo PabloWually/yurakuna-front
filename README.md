@@ -130,7 +130,28 @@ npm test
 
 # Build en modo watch
 npm run watch
+
+# Build y deploy manual a Cloudflare Workers
+npm run deploy:workers
 ```
+
+## ☁️ Deploy en Cloudflare Workers
+
+El proyecto está configurado para desplegarse automáticamente a Cloudflare Workers en cada `push` a la rama `main` mediante GitHub Actions.
+
+### Archivos de configuración
+
+- `wrangler.toml`: define el Worker y publica los assets estáticos desde `dist/temp-yurakuna/browser`
+- `.github/workflows/deploy-cloudflare-workers.yml`: ejecuta build de producción y despliegue
+
+### Secrets requeridos en GitHub
+
+Configura estos secretos en tu repositorio:
+
+- `CLOUDFLARE_API_TOKEN`
+- `CLOUDFLARE_ACCOUNT_ID`
+
+El token debe tener permisos para desplegar Workers.
 
 ## 🔐 Autenticación
 

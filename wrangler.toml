@@ -1,0 +1,6 @@
+name = "yurakuna-front"
+compatibility_date = "2026-04-14"
+
+[assets]
+directory = "./dist/temp-yurakuna/browser"
+not_found_handling = "single-page-application"
