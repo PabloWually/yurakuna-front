@@ -1,5 +1,12 @@
 import { Injectable, inject } from '@angular/core';
-import { HttpInterceptorFn, HttpRequest, HttpHandlerFn, HttpEvent, HttpErrorResponse } from '@angular/common/http';
+import {
+  HttpInterceptorFn,
+  HttpRequest,
+  HttpHandlerFn,
+  HttpEvent,
+  HttpErrorResponse,
+} from '@angular/common/http';
+import { Router } from '@angular/router';
 import { Observable, throwError, BehaviorSubject } from 'rxjs';
 import { catchError, switchMap, filter, take } from 'rxjs/operators';
 import { TokenService } from '../services/token.service';
@@ -9,15 +16,22 @@ import { AuthService } from '../services/auth.service';
  * HTTP Interceptor for handling authentication tokens
  * - Adds Authorization header to requests
  * - Handles token refresh on 401 errors
+ * - Handles 403 forbidden errors
  */
-export const authInterceptor: HttpInterceptorFn = (req: HttpRequest<unknown>, next: HttpHandlerFn): Observable<HttpEvent<unknown>> => {
+export const authInterceptor: HttpInterceptorFn = (
+  req: HttpRequest<unknown>,
+  next: HttpHandlerFn,
+): Observable<HttpEvent<unknown>> => {
   const tokenService = inject(TokenService);
   const authService = inject(AuthService);
-  
-  // Skip token attachment for login, register, and refresh endpoints
-  const skipAuth = req.url.includes('/auth/login') || 
-                   req.url.includes('/auth/register') || 
-                   req.url.includes('/auth/refresh');
+  const router = inject(Router);
+
+  // Skip token attachment for login, register, refresh, and logout endpoints
+  const skipAuth =
+    req.url.includes('/auth/login') ||
+    req.url.includes('/auth/register') ||
+    req.url.includes('/auth/refresh') ||
+    req.url.includes('/auth/logout');
 
   if (skipAuth) {
     return next(req);
@@ -25,7 +39,7 @@ export const authInterceptor: HttpInterceptorFn = (req: HttpRequest<unknown>, ne
 
   // Add token to request if available
   const accessToken = tokenService.getAccessToken();
-  
+
   if (accessToken) {
     req = addToken(req, accessToken);
   }
@@ -36,9 +50,14 @@ export const authInterceptor: HttpInterceptorFn = (req: HttpRequest<unknown>, ne
       if (error.status === 401 && !skipAuth) {
         return handle401Error(req, next, tokenService, authService);
       }
-      
+
+      // Handle 403 errors (forbidden - authenticated but not authorized)
+      if (error.status === 403) {
+        router.navigate(['/unauthorized']);
+      }
+
       return throwError(() => error);
-    })
+    }),
   );
 };
 
@@ -48,8 +67,8 @@ export const authInterceptor: HttpInterceptorFn = (req: HttpRequest<unknown>, ne
 function addToken(request: HttpRequest<any>, token: string): HttpRequest<any> {
   return request.clone({
     setHeaders: {
-      Authorization: `Bearer ${token}`
-    }
+      Authorization: `Bearer ${token}`,
+    },
   });
 }
 
@@ -66,7 +85,7 @@ function handle401Error(
   request: HttpRequest<any>,
   next: HttpHandlerFn,
   tokenService: TokenService,
-  authService: AuthService
+  authService: AuthService,
 ): Observable<HttpEvent<any>> {
   if (!isRefreshing) {
     isRefreshing = true;
@@ -85,7 +104,7 @@ function handle401Error(
           isRefreshing = false;
           authService.logout();
           return throwError(() => error);
-        })
+        }),
       );
     } else {
       authService.logout();
@@ -94,9 +113,9 @@ function handle401Error(
   } else {
     // Wait for token refresh to complete
     return refreshTokenSubject.pipe(
-      filter(token => token !== null),
+      filter((token) => token !== null),
       take(1),
-      switchMap(token => next(addToken(request, token!)))
+      switchMap((token) => next(addToken(request, token!))),
     );
   }
 }

@@ -8,7 +8,7 @@ import {
   RegisterRequest,
   AuthResponse,
   User,
-  RefreshTokenRequest
+  RefreshTokenRequest,
 } from '../../models';
 
 /**
@@ -16,32 +16,34 @@ import {
  * Handles login, register, logout, and token management
  */
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class AuthService {
   private apiService = inject(ApiService);
   private tokenService = inject(TokenService);
   private router = inject(Router);
 
-  // Current user signal
-  currentUser = signal<User | null>(null);
-  
+  // Current user signal — restored from localStorage on startup
+  currentUser = signal<User | null>(
+    this.tokenService.isAuthenticated() ? this.tokenService.getUser() : null,
+  );
+
   /**
    * Login user
    */
   login(credentials: LoginRequest): Observable<AuthResponse> {
-    return this.apiService.post<AuthResponse>('/auth/login', credentials).pipe(
-      tap(response => this.handleAuthResponse(response))
-    );
+    return this.apiService
+      .post<AuthResponse>('/auth/login', credentials)
+      .pipe(tap((response) => this.handleAuthResponse(response)));
   }
 
   /**
    * Register new user
    */
   register(data: RegisterRequest): Observable<AuthResponse> {
-    return this.apiService.post<AuthResponse>('/auth/register', data).pipe(
-      tap(response => this.handleAuthResponse(response))
-    );
+    return this.apiService
+      .post<AuthResponse>('/auth/register', data)
+      .pipe(tap((response) => this.handleAuthResponse(response)));
   }
 
   /**
@@ -49,9 +51,9 @@ export class AuthService {
    */
   refreshToken(refreshToken: string): Observable<AuthResponse> {
     const payload: RefreshTokenRequest = { refreshToken };
-    return this.apiService.post<AuthResponse>('/auth/refresh', payload).pipe(
-      tap(response => this.handleAuthResponse(response))
-    );
+    return this.apiService
+      .post<AuthResponse>('/auth/refresh', payload)
+      .pipe(tap((response) => this.handleAuthResponse(response)));
   }
 
   /**
@@ -59,12 +61,12 @@ export class AuthService {
    */
   logout(): void {
     const refreshToken = this.tokenService.getRefreshToken();
-    
+
     if (refreshToken) {
       // Call logout endpoint (fire and forget)
       this.apiService.post('/auth/logout', { refreshToken }).subscribe();
     }
-    
+
     this.clearSession();
     this.router.navigate(['/auth/login']);
   }
@@ -74,15 +76,15 @@ export class AuthService {
    */
   logoutAll(): Observable<void> {
     const refreshToken = this.tokenService.getRefreshToken();
-    
+
     if (!refreshToken) {
       this.clearSession();
-      return new Observable(observer => observer.complete());
+      return new Observable((observer) => observer.complete());
     }
 
-    return this.apiService.post<void>('/auth/logout-all', { refreshToken }).pipe(
-      tap(() => this.clearSession())
-    );
+    return this.apiService
+      .post<void>('/auth/logout-all', { refreshToken })
+      .pipe(tap(() => this.clearSession()));
   }
 
   /**
@@ -105,6 +107,7 @@ export class AuthService {
   private handleAuthResponse(response: AuthResponse): void {
     this.tokenService.setAccessToken(response.accessToken);
     this.tokenService.setRefreshToken(response.refreshToken);
+    this.tokenService.setUser(response.user);
     this.currentUser.set(response.user);
   }
 

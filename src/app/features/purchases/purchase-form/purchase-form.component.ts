@@ -204,11 +204,22 @@ export class PurchaseFormComponent implements OnInit {
   }
 
   /**
-   * Calculate line total
+   * Calculate line total for a specific FormArray index
    */
   getLineTotal(index: number): number {
     const item = this.items.at(index).value;
-    return (item.quantity || 0) * (item.pricePerUnit || 0);
+    return (Number(item.quantity) || 0) * (Number(item.pricePerUnit) || 0);
+  }
+
+  /**
+   * Calculate line total from an AbstractControl directly.
+   * Used in the template: *matCellDef does NOT expose `index` in its context,
+   * so we pass the control reference instead of relying on the row index.
+   */
+  getLineTotalFromControl(ctrl: AbstractControl): number {
+    const qty = Number(ctrl.get('quantity')?.value) || 0;
+    const price = Number(ctrl.get('pricePerUnit')?.value) || 0;
+    return qty * price;
   }
 
   /**
@@ -216,8 +227,10 @@ export class PurchaseFormComponent implements OnInit {
    */
   calculateTotal(): void {
     let total = 0;
-    for (let i = 0; i < this.items.length; i++) {
-      total += this.getLineTotal(i);
+    for (const ctrl of this.items.controls) {
+      const qty = Number(ctrl.get('quantity')?.value) || 0;
+      const price = Number(ctrl.get('pricePerUnit')?.value) || 0;
+      total += qty * price;
     }
     this.purchaseTotal.set(total);
   }
@@ -313,6 +326,7 @@ export class PurchaseFormComponent implements OnInit {
     }
 
     const formData = this.purchaseForm.value;
+    console.log('form data', formData);
 
     try {
       if (this.isEditMode()) {
@@ -339,7 +353,7 @@ export class PurchaseFormComponent implements OnInit {
           items: formData.items.map((item: PurchaseItem) => ({
             productId: item.productId,
             quantity: item.quantity,
-            pricePerUnit: item.pricePerUnit,
+            pricePerUnit: +item.pricePerUnit,
           })),
         };
         CreatePurchaseSchema.parse(createData);
@@ -359,6 +373,7 @@ export class PurchaseFormComponent implements OnInit {
    */
   createPurchase(data: CreatePurchaseRequest): void {
     this.loading.set(true);
+    console.log('create purchase', data);
 
     this.purchaseService.createPurchase(data).subscribe({
       next: () => {

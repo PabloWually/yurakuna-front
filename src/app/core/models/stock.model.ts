@@ -1,4 +1,5 @@
 import { StockMovementType, ShrinkageCause } from './common.model';
+import { Product } from './product.model';
 
 /**
  * Stock-related interfaces
@@ -8,6 +9,7 @@ import { StockMovementType, ShrinkageCause } from './common.model';
 export interface StockMovement {
   id: string;
   productId: string;
+  product: Product;
   type: StockMovementType;
   quantity: number;
   quantityBefore: number | null;
@@ -32,6 +34,7 @@ export interface CreateStockMovementRequest {
 export interface Shrinkage {
   id: string;
   productId: string;
+  product: Product;
   quantity: number; // API may return as string "5.00"
   cause: ShrinkageCause;
   notes?: string | null;

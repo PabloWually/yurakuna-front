@@ -149,6 +149,13 @@ export class DeliveryListComponent implements OnInit {
   }
 
   /**
+   * Navigate to order detail page
+   */
+  viewOrder(delivery: Delivery): void {
+    this.router.navigate(['/orders', delivery.orderId]);
+  }
+
+  /**
    * Navigate to edit delivery page
    */
   editDelivery(delivery: Delivery): void {

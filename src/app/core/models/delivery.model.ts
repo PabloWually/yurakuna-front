@@ -1,3 +1,4 @@
+import { Client } from './client.model';
 import { DeliveryStatus } from './common.model';
 
 /**
@@ -28,6 +29,7 @@ export interface Delivery {
   createdAt: string;
   updatedAt: string;
   items?: DeliveryItem[]; // Present in GET /:id, absent in list
+  client?: Client;
 }
 
 // Delivery with items (GET /:id response)
