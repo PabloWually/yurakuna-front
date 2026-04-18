@@ -1,6 +1,6 @@
 export const environment = {
   production: true,
-  apiUrl: 'https://yurakuna-api.pablo-guallichico.workers.dev/api',
+  apiUrl: 'http://18.232.68.250/api',
   apiTimeout: 30000,
   tokenRefreshEnabled: true,
 };
