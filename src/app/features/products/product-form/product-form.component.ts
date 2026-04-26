@@ -116,13 +116,14 @@ export class ProductFormComponent implements OnInit {
       this.productForm.markAllAsTouched();
       return;
     }
-
+    console.log('formData', this.productForm.value);
     // Validate with Zod
     const formData = this.productForm.value;
 
     try {
       if (this.isEditMode()) {
-        // Validate update data
+        formData.pricePerUnit = +formData.pricePerUnit;
+        formData.currentStock = +formData.currentStock;
         UpdateProductSchema.parse(formData);
         this.updateProduct(formData);
       } else {
@@ -172,6 +173,7 @@ export class ProductFormComponent implements OnInit {
     if (!this.productId) return;
 
     this.loading.set(true);
+    console.log('data', data);
 
     this.productService.updateProduct(this.productId, data).subscribe({
       next: (product) => {

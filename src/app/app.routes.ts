@@ -84,7 +84,7 @@ export const routes: Routes = [
     title: 'Acceso Denegado - Yurakuna',
   },
 
-  // Fallback route
+  // Fallback route - redirect to dashboard (will be caught by authGuard if not authenticated)
   {
     path: '**',
     redirectTo: '/dashboard',

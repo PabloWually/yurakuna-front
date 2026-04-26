@@ -44,7 +44,18 @@ export class AdminLayoutComponent {
   private breakpointObserver = inject(BreakpointObserver);
 
   currentUser = this.authService.currentUser;
-  sidenavOpened = signal(true);
+  
+  // Persist sidenav state in sessionStorage to survive token refresh
+  private getSidenavState(): boolean {
+    const stored = sessionStorage.getItem('sidenav_opened');
+    return stored !== null ? stored === 'true' : true; // default true
+  }
+
+  private saveSidenavState(opened: boolean): void {
+    sessionStorage.setItem('sidenav_opened', String(opened));
+  }
+
+  sidenavOpened = signal(this.getSidenavState());
 
   // Navigation items
   navItems: NavItem[] = [
@@ -80,18 +91,32 @@ export class AdminLayoutComponent {
       this.isMobile.set(result.matches);
       if (result.matches) {
         this.sidenavOpened.set(false);
+        this.saveSidenavState(false);
       } else {
-        this.sidenavOpened.set(true);
+        // Restore previous state from sessionStorage on desktop
+        const previousState = this.getSidenavState();
+        this.sidenavOpened.set(previousState);
       }
     });
   }
 
   toggleSidenav(): void {
-    this.sidenavOpened.set(!this.sidenavOpened());
+    const newState = !this.sidenavOpened();
+    this.sidenavOpened.set(newState);
+    this.saveSidenavState(newState);
   }
 
   logout(): void {
-    this.authService.logout();
+    this.authService.logout().subscribe({
+      next: () => {
+        // Logout successful, navigate to login
+        this.router.navigate(['/auth/login']);
+      },
+      error: () => {
+        // Even if logout fails on API side, clear local tokens and redirect
+        this.router.navigate(['/auth/login']);
+      },
+    });
   }
 
   getUserInitials(): string {

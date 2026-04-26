@@ -1,22 +1,26 @@
 import { inject } from '@angular/core';
 import { Router, CanActivateFn } from '@angular/router';
-import { AuthService } from '../services/auth.service';
+import { TokenService } from '../services/token.service';
 
 /**
  * Guard to protect routes that require authentication
- * Redirects to login if user is not authenticated
+ * - Quick synchronous check (no async refresh here)
+ * - If token is invalid, redirects to login
+ * - Token refresh is handled by interceptor and background service
  */
 export const authGuard: CanActivateFn = (route, state) => {
-  const authService = inject(AuthService);
+  const tokenService = inject(TokenService);
   const router = inject(Router);
 
-  if (authService.isAuthenticated()) {
+  // Quick check: do we have a valid token?
+  if (tokenService.isAuthenticated()) {
     return true;
   }
 
-  // Redirect to login with return URL
-  router.navigate(['/auth/login'], { 
-    queryParams: { returnUrl: state.url } 
+  // Invalid or missing token - redirect to login
+  // The interceptor will handle refresh on demand
+  router.navigate(['/auth/login'], {
+    queryParams: { returnUrl: state.url },
   });
   return false;
 };

@@ -5,6 +5,8 @@ import { provideAnimationsAsync } from '@angular/platform-browser/animations/asy
 
 import { routes } from './app.routes';
 import { authInterceptor } from './core/auth/interceptors/auth.interceptor';
+import { SESSION_INITIALIZER_PROVIDER } from './core/auth/services/session-initializer.service';
+import { TokenRefreshManagerService } from './core/auth/services/token-refresh-manager.service';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -13,6 +15,8 @@ export const appConfig: ApplicationConfig = {
     provideHttpClient(
       withInterceptors([authInterceptor])
     ),
-    provideAnimationsAsync()
+    provideAnimationsAsync(),
+    SESSION_INITIALIZER_PROVIDER,
+    TokenRefreshManagerService,
   ]
 };

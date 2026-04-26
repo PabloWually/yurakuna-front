@@ -47,28 +47,47 @@ export class AuthService {
   }
 
   /**
-   * Refresh access token
+   * Refresh access token (for interactive login, updates UI)
    */
   refreshToken(refreshToken: string): Observable<AuthResponse> {
     const payload: RefreshTokenRequest = { refreshToken };
     return this.apiService
       .post<AuthResponse>('/auth/refresh', payload)
-      .pipe(tap((response) => this.handleAuthResponse(response)));
+      .pipe(tap((response) => this.handleAuthResponse(response, false)));
+  }
+
+  /**
+   * Silent refresh (for background, does NOT update currentUser signal)
+   * Used by interceptor and background service to avoid UI disruptions
+   */
+  silentRefreshToken(refreshToken: string): Observable<AuthResponse> {
+    const payload: RefreshTokenRequest = { refreshToken };
+    return this.apiService
+      .post<AuthResponse>('/auth/refresh', payload)
+      .pipe(tap((response) => this.handleAuthResponse(response, true)));
   }
 
   /**
    * Logout user
+   * Sends token to API, waits for response, then clears local tokens
    */
-  logout(): void {
+  logout(): Observable<void> {
     const refreshToken = this.tokenService.getRefreshToken();
 
-    if (refreshToken) {
-      // Call logout endpoint (fire and forget)
-      this.apiService.post('/auth/logout', { refreshToken }).subscribe();
+    if (!refreshToken) {
+      // No token, just clear local session
+      this.clearSession();
+      return new Observable((observer) => {
+        observer.complete();
+      });
     }
 
-    this.clearSession();
-    this.router.navigate(['/auth/login']);
+    // Send logout request with token, wait for response, then clear
+    return this.apiService.post<void>('/auth/logout', { refreshToken }).pipe(
+      tap(() => {
+        this.clearSession();
+      }),
+    );
   }
 
   /**
@@ -88,6 +107,15 @@ export class AuthService {
   }
 
   /**
+   * Clear session and redirect to login
+   * Called when session is invalid (token refresh fails, etc.)
+   */
+  clearSessionAndLogout(): void {
+    this.clearSession();
+    this.router.navigate(['/auth/login']);
+  }
+
+  /**
    * Check if user is authenticated
    */
   isAuthenticated(): boolean {
@@ -103,12 +131,19 @@ export class AuthService {
 
   /**
    * Handle authentication response
+   * When isSilent=true, only updates tokens without notifying UI
+   * This prevents layout re-renders during background refresh
    */
-  private handleAuthResponse(response: AuthResponse): void {
+  private handleAuthResponse(response: AuthResponse, isSilent = false): void {
     this.tokenService.setAccessToken(response.accessToken);
     this.tokenService.setRefreshToken(response.refreshToken);
     this.tokenService.setUser(response.user);
-    this.currentUser.set(response.user);
+    
+    // Only update currentUser signal if not a silent refresh
+    // This prevents unnecessary re-renders during background token updates
+    if (!isSilent) {
+      this.currentUser.set(response.user);
+    }
   }
 
   /**

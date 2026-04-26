@@ -14,6 +14,7 @@ import { AuthService } from '../services/auth.service';
 
 /**
  * HTTP Interceptor for handling authentication tokens
+ * - Validates token before making request and refreshes if needed
  * - Adds Authorization header to requests
  * - Handles token refresh on 401 errors
  * - Handles 403 forbidden errors
@@ -37,17 +38,60 @@ export const authInterceptor: HttpInterceptorFn = (
     return next(req);
   }
 
-  // Add token to request if available
+  // Get current access token
   const accessToken = tokenService.getAccessToken();
 
-  if (accessToken) {
-    req = addToken(req, accessToken);
+  // If no token, proceed without auth header
+  if (!accessToken) {
+    return next(req).pipe(
+      catchError((error: HttpErrorResponse) => {
+        if (error.status === 401) {
+          // Unauthorized without token - redirect to login
+          router.navigate(['/auth/login']);
+          return throwError(() => error);
+        }
+        if (error.status === 403) {
+          router.navigate(['/unauthorized']);
+        }
+        return throwError(() => error);
+      }),
+    );
   }
+
+  // Token exists - check if it's expired BEFORE making the request
+  const isExpired = tokenService.isTokenExpired(accessToken);
+
+  if (isExpired) {
+    // Token is expired - try to refresh before making the request
+    const refreshToken = tokenService.getRefreshToken();
+
+    if (!refreshToken) {
+      // No refresh token - clear session and reject request
+      authService.clearSessionAndLogout();
+      return throwError(() => new Error('Session expired'));
+    }
+
+    // Attempt SILENT refresh BEFORE the request (don't disrupt UI)
+    return authService.silentRefreshToken(refreshToken).pipe(
+      switchMap((response) => {
+        // Successfully refreshed - retry request with new token
+        return next(addToken(req, response.accessToken));
+      }),
+      catchError((error) => {
+        // Refresh failed - clear session and redirect
+        authService.clearSessionAndLogout();
+        return throwError(() => error);
+      }),
+    );
+  }
+
+  // Token is valid - attach it and make the request
+  req = addToken(req, accessToken);
 
   return next(req).pipe(
     catchError((error: HttpErrorResponse) => {
-      // Handle 401 errors (unauthorized)
-      if (error.status === 401 && !skipAuth) {
+      // Handle 401 errors (token expired mid-request)
+      if (error.status === 401) {
         return handle401Error(req, next, tokenService, authService);
       }
 
@@ -80,6 +124,7 @@ const refreshTokenSubject = new BehaviorSubject<string | null>(null);
 
 /**
  * Handle 401 errors by refreshing the token
+ * If refresh fails, clear session and redirect to login
  */
 function handle401Error(
   request: HttpRequest<any>,
@@ -94,7 +139,7 @@ function handle401Error(
     const refreshToken = tokenService.getRefreshToken();
 
     if (refreshToken) {
-      return authService.refreshToken(refreshToken).pipe(
+      return authService.silentRefreshToken(refreshToken).pipe(
         switchMap((response) => {
           isRefreshing = false;
           refreshTokenSubject.next(response.accessToken);
@@ -102,12 +147,15 @@ function handle401Error(
         }),
         catchError((error) => {
           isRefreshing = false;
-          authService.logout();
+          // Refresh failed: clear session and redirect to login
+          authService.clearSessionAndLogout();
           return throwError(() => error);
         }),
       );
     } else {
-      authService.logout();
+      isRefreshing = false;
+      // No refresh token: clear session and redirect to login
+      authService.clearSessionAndLogout();
       return throwError(() => new Error('No refresh token available'));
     }
   } else {
@@ -116,6 +164,12 @@ function handle401Error(
       filter((token) => token !== null),
       take(1),
       switchMap((token) => next(addToken(request, token!))),
+      catchError((error) => {
+        // If refresh failed while waiting, clear session
+        isRefreshing = false;
+        authService.clearSessionAndLogout();
+        return throwError(() => error);
+      }),
     );
   }
 }
