@@ -6,6 +6,7 @@ import { PurchaseStatus } from './common.model';
  */
 
 export interface PurchaseItem {
+  id?: string; // Present in API responses, needed for editing
   productId: string;
   quantity: number;
   pricePerUnit: number;

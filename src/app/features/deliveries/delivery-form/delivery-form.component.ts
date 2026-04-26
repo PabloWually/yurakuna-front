@@ -7,6 +7,7 @@ import {
   AbstractControl,
   ReactiveFormsModule,
   Validators,
+  FormsModule,
 } from '@angular/forms';
 import { Router, ActivatedRoute } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
@@ -32,6 +33,7 @@ import {
   UpdateDeliveryRequest,
   Client,
   OrderItem,
+  Order,
 } from '../../../core/models';
 import { ClientService } from '../../clients/services/client.service';
 import { OrderService } from '../../orders/services/order.service';
@@ -42,6 +44,7 @@ import { OrderService } from '../../orders/services/order.service';
   imports: [
     CommonModule,
     ReactiveFormsModule,
+    FormsModule,
     MatCardModule,
     MatFormFieldModule,
     MatInputModule,
@@ -72,12 +75,15 @@ export class DeliveryFormComponent implements OnInit {
   loading = signal(false);
   isEditMode = signal(false);
   deliveryId: string | null = null;
+  currentDeliveryStatus = signal<string>('');
 
   // Loaded delivery (edit mode)
   currentDelivery = signal<DeliveryWithItems | null>(null);
 
   // Dropdown data
   clients = signal<Client[]>([]);
+  confirmedOrders = signal<Order[]>([]);
+  ordersLoading = signal(false);
 
   // Order items for create mode
   orderItems = signal<OrderItem[]>([]);
@@ -112,8 +118,9 @@ export class DeliveryFormComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    // Load clients for dropdown
+    // Load clients and confirmed orders for dropdowns
     this.loadClients();
+    this.loadConfirmedOrders();
 
     // Check if we're in edit mode
     this.deliveryId = this.route.snapshot.paramMap.get('id');
@@ -150,11 +157,39 @@ export class DeliveryFormComponent implements OnInit {
   }
 
   /**
-   * Load order items (create mode — phase 2 trigger)
+   * Load confirmed orders for dropdown
+   */
+  loadConfirmedOrders(): void {
+    this.ordersLoading.set(true);
+    this.orderService
+      .listOrders({
+        limit: 1000,
+        offset: 0,
+        filters: [{ field: 'status', value: 'confirmed', operator: 'eq' }],
+      })
+      .subscribe({
+        next: (response) => {
+          this.confirmedOrders.set(response.data);
+          this.ordersLoading.set(false);
+        },
+        error: (error) => {
+          console.error('Error loading confirmed orders:', error);
+          this.ordersLoading.set(false);
+          this.snackBar.open('Error al cargar pedidos confirmados', 'Cerrar', {
+            duration: 3000,
+            panelClass: ['error-snackbar'],
+          });
+        },
+      });
+  }
+
+  /**
+   * Load order items (create mode — triggered on order selection)
    */
   loadOrderItems(): void {
-    const orderId = this.deliveryForm.get('orderId')?.value?.trim();
+    const orderId = this.deliveryForm.get('orderId')?.value;
     if (!orderId) return;
+
     this.orderLoading.set(true);
     this.orderService.getOrder(orderId).subscribe({
       next: (order) => {
@@ -205,6 +240,7 @@ export class DeliveryFormComponent implements OnInit {
     this.deliveryService.getDelivery(id).subscribe({
       next: (delivery) => {
         this.currentDelivery.set(delivery);
+        this.currentDeliveryStatus.set(delivery.status);
         this.deliveryForm.patchValue({
           orderId: delivery.orderId,
           clientId: delivery.clientId,
@@ -225,6 +261,13 @@ export class DeliveryFormComponent implements OnInit {
         this.router.navigate(['/deliveries']);
       },
     });
+  }
+
+  /**
+   * Check if items can be edited (delivery is in pending status)
+   */
+  canEditItems(): boolean {
+    return this.isEditMode() && this.currentDeliveryStatus() === 'pending';
   }
 
   /**
@@ -356,6 +399,92 @@ export class DeliveryFormComponent implements OnInit {
    */
   cancel(): void {
     this.router.navigate(['/deliveries']);
+  }
+
+  // ===== ITEM MANAGEMENT FOR EDIT MODE =====
+
+  /**
+   * Update item in existing delivery (pending only)
+   */
+  updateDeliveryItemAtIndex(index: number): void {
+    if (!this.deliveryId) return;
+
+    const delivery = this.currentDelivery();
+    if (!delivery || index >= delivery.items.length) return;
+
+    const itemToUpdate = delivery.items[index];
+    // Get the updated quantity from the delivery item (modified by ngModel binding)
+    const updatedQuantity = Number(itemToUpdate.quantity) || 0;
+
+    if (!updatedQuantity || updatedQuantity <= 0) {
+      this.snackBar.open('La cantidad debe ser mayor a 0', 'Cerrar', {
+        duration: 3000,
+        panelClass: ['error-snackbar'],
+      });
+      return;
+    }
+
+    const updateData = {
+      quantity: updatedQuantity,
+    };
+
+    this.loading.set(true);
+    this.deliveryService.updateDeliveryItem(this.deliveryId, itemToUpdate.id, updateData).subscribe({
+      next: () => {
+        this.loading.set(false);
+        this.snackBar.open('Producto actualizado exitosamente', 'Cerrar', {
+          duration: 3000,
+        });
+        // Reload the delivery to refresh items
+        this.loadDelivery(this.deliveryId!);
+      },
+      error: (error) => {
+        this.loading.set(false);
+        const errorMessage = error.error?.message || 'Error al actualizar producto';
+        this.snackBar.open(errorMessage, 'Cerrar', {
+          duration: 5000,
+          panelClass: ['error-snackbar'],
+        });
+        console.error('Error updating item:', error);
+      },
+    });
+  }
+
+  /**
+   * Delete item from existing delivery (pending only)
+   */
+  deleteDeliveryItemAtIndex(index: number): void {
+    if (!this.deliveryId) return;
+
+    const delivery = this.currentDelivery();
+    if (!delivery || index >= delivery.items.length) return;
+
+    const itemToDelete = delivery.items[index];
+
+    if (!confirm('¿Estás seguro de que deseas eliminar este producto?')) {
+      return;
+    }
+
+    this.loading.set(true);
+    this.deliveryService.deleteDeliveryItem(this.deliveryId, itemToDelete.id).subscribe({
+      next: () => {
+        this.loading.set(false);
+        this.snackBar.open('Producto eliminado exitosamente', 'Cerrar', {
+          duration: 3000,
+        });
+        // Reload the delivery to refresh items
+        this.loadDelivery(this.deliveryId!);
+      },
+      error: (error) => {
+        this.loading.set(false);
+        const errorMessage = error.error?.message || 'Error al eliminar producto';
+        this.snackBar.open(errorMessage, 'Cerrar', {
+          duration: 5000,
+          panelClass: ['error-snackbar'],
+        });
+        console.error('Error deleting item:', error);
+      },
+    });
   }
 
   /**

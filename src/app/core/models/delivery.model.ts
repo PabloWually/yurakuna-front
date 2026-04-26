@@ -1,5 +1,6 @@
 import { Client } from './client.model';
 import { DeliveryStatus } from './common.model';
+import { Product } from './product.model';
 
 /**
  * Delivery-related interfaces
@@ -14,6 +15,7 @@ export interface DeliveryItem {
   quantity: string; // API returns as string decimal e.g. "2.00"
   isActive: boolean;
   createdAt: string;
+  product?: Product; // Nested product info from API response
 }
 
 // Delivery interface (list response — no items)

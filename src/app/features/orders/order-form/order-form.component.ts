@@ -66,6 +66,7 @@ export class OrderFormComponent implements OnInit {
   loading = signal(false);
   isEditMode = signal(false);
   orderId: string | null = null;
+  currentOrderStatus = signal<string>('');
 
   // Dropdown data
   clients = signal<Client[]>([]);
@@ -124,14 +125,15 @@ export class OrderFormComponent implements OnInit {
   }
 
   /**
-   * Create a new item FormGroup
+   * Create an item FormGroup
    */
   createItemFormGroup(item?: OrderItem): FormGroup {
     const product = item?.productId ? this.products().find((p) => p.id === item.productId) : null;
 
     const group = this.fb.group({
+      id: [item?.id || ''], // Item ID (for edit mode)
       productId: [item?.productId || '', Validators.required],
-      quantity: [item?.quantity || 1, [Validators.required, Validators.min(1)]],
+      quantity: [item?.quantity || 1, [Validators.required, Validators.min(0)]],
       pricePerUnit: [item?.pricePerUnit || product?.pricePerUnit || 0],
       productName: [item?.productName || product?.name || ''],
     });
@@ -164,7 +166,6 @@ export class OrderFormComponent implements OnInit {
     this.items.push(this.createItemFormGroup());
     this.itemControlsList.set([...this.items.controls]);
     this.refreshSelectedProductIds();
-    console.log(this.items);
   }
 
   /**
@@ -261,6 +262,9 @@ export class OrderFormComponent implements OnInit {
 
     this.orderService.getOrder(id).subscribe({
       next: (order) => {
+        // Store the current status
+        this.currentOrderStatus.set(order.status);
+
         // Populate form
         this.orderForm.patchValue({
           clientId: order.clientId,
@@ -288,6 +292,13 @@ export class OrderFormComponent implements OnInit {
         this.router.navigate(['/orders']);
       },
     });
+  }
+
+  /**
+   * Check if items can be edited (order is in draft status)
+   */
+  canEditItems(): boolean {
+    return this.isEditMode() && this.currentOrderStatus() === 'draft';
   }
 
   /**
@@ -407,6 +418,168 @@ export class OrderFormComponent implements OnInit {
    */
   cancel(): void {
     this.router.navigate(['/orders']);
+  }
+
+  // ===== ITEM MANAGEMENT FOR EDIT MODE =====
+
+  /**
+   * Add item to existing order (draft only)
+   */
+  addItemToOrder(): void {
+    if (!this.orderId) return;
+
+    const lastItemForm = this.items.at(this.items.length - 1);
+    if (!lastItemForm || lastItemForm.invalid) {
+      this.snackBar.open('Por favor completa el último producto antes de agregar otro', 'Cerrar', {
+        duration: 3000,
+        panelClass: ['error-snackbar'],
+      });
+      return;
+    }
+
+    const itemData = {
+      productId: lastItemForm.get('productId')?.value,
+      quantity: lastItemForm.get('quantity')?.value,
+    };
+
+    this.loading.set(true);
+    this.orderService.addOrderItem(this.orderId, itemData).subscribe({
+      next: (newItem) => {
+        this.loading.set(false);
+        // Reload the order to refresh items with IDs from server
+        this.loadOrder(this.orderId!);
+        this.snackBar.open('Producto agregado exitosamente', 'Cerrar', {
+          duration: 3000,
+        });
+      },
+      error: (error) => {
+        this.loading.set(false);
+        const errorMessage = error.error?.message || 'Error al agregar producto';
+        this.snackBar.open(errorMessage, 'Cerrar', {
+          duration: 5000,
+          panelClass: ['error-snackbar'],
+        });
+        console.error('Error adding item:', error);
+      },
+    });
+  }
+
+  /**
+   * Update item in existing order (draft only)
+   */
+  /**
+   * Save item in existing order (add if new, update if existing - draft only)
+   */
+  updateOrderItemAtIndex(index: number): void {
+    if (!this.orderId) return;
+
+    const itemControl = this.items.at(index);
+    const itemId = itemControl.get('id')?.value;
+
+    if (itemControl.invalid) {
+      this.snackBar.open('Por favor completa los datos del producto correctamente', 'Cerrar', {
+        duration: 3000,
+        panelClass: ['error-snackbar'],
+      });
+      return;
+    }
+
+    // If no ID, it's a new item - use add
+    if (!itemId) {
+      const itemData = {
+        productId: itemControl.get('productId')?.value,
+        quantity: itemControl.get('quantity')?.value,
+      };
+
+      this.loading.set(true);
+      this.orderService.addOrderItem(this.orderId, itemData).subscribe({
+        next: (newItem) => {
+          this.loading.set(false);
+          // Reload the order to refresh items with IDs from server
+          this.loadOrder(this.orderId!);
+          this.snackBar.open('Producto agregado exitosamente', 'Cerrar', {
+            duration: 3000,
+          });
+        },
+        error: (error) => {
+          this.loading.set(false);
+          const errorMessage = error.error?.message || 'Error al agregar producto';
+          this.snackBar.open(errorMessage, 'Cerrar', {
+            duration: 5000,
+            panelClass: ['error-snackbar'],
+          });
+          console.error('Error adding item:', error);
+        },
+      });
+      return;
+    }
+
+    // If has ID, it's an existing item - use update
+    const itemData = {
+      quantity: itemControl.get('quantity')?.value,
+    };
+
+    this.loading.set(true);
+    this.orderService.updateOrderItem(this.orderId, itemId, itemData).subscribe({
+      next: () => {
+        this.loading.set(false);
+        this.snackBar.open('Producto actualizado exitosamente', 'Cerrar', {
+          duration: 3000,
+        });
+      },
+      error: (error) => {
+        this.loading.set(false);
+        const errorMessage = error.error?.message || 'Error al actualizar producto';
+        this.snackBar.open(errorMessage, 'Cerrar', {
+          duration: 5000,
+          panelClass: ['error-snackbar'],
+        });
+        console.error('Error updating item:', error);
+      },
+    });
+  }
+
+  /**
+   * Delete item from existing order (draft only)
+   */
+  deleteOrderItemAtIndex(index: number): void {
+    if (!this.orderId) return;
+
+    const itemControl = this.items.at(index);
+    const itemId = itemControl.get('id')?.value;
+
+    if (!itemId) {
+      this.snackBar.open('No se puede eliminar este producto', 'Cerrar', {
+        duration: 3000,
+        panelClass: ['error-snackbar'],
+      });
+      return;
+    }
+
+    if (!confirm('¿Estás seguro de que deseas eliminar este producto?')) {
+      return;
+    }
+
+    this.loading.set(true);
+    this.orderService.deleteOrderItem(this.orderId, itemId).subscribe({
+      next: () => {
+        this.loading.set(false);
+        // Reload the order to refresh items
+        this.loadOrder(this.orderId!);
+        this.snackBar.open('Producto eliminado exitosamente', 'Cerrar', {
+          duration: 3000,
+        });
+      },
+      error: (error) => {
+        this.loading.set(false);
+        const errorMessage = error.error?.message || 'Error al eliminar producto';
+        this.snackBar.open(errorMessage, 'Cerrar', {
+          duration: 5000,
+          panelClass: ['error-snackbar'],
+        });
+        console.error('Error deleting item:', error);
+      },
+    });
   }
 
   /**

@@ -4,6 +4,7 @@ import { ApiService } from '../../../core/services/api.service';
 import {
   Purchase,
   PurchaseDetail,
+  PurchaseItem,
   CreatePurchaseRequest,
   UpdatePurchaseRequest,
   Criteria,
@@ -50,5 +51,43 @@ export class PurchaseService {
    */
   deletePurchase(id: string): Observable<void> {
     return this.apiService.delete<void>(`${this.BASE_URL}/${id}`);
+  }
+
+  // ===== ITEM MANAGEMENT =====
+
+  /**
+   * Add item to purchase (only in draft status)
+   * POST /purchases/:id/items
+   */
+  addPurchaseItem(
+    purchaseId: string,
+    data: { productId: string; quantity: number; pricePerUnit: number }
+  ): Observable<PurchaseItem> {
+    return this.apiService.post<PurchaseItem>(`${this.BASE_URL}/${purchaseId}/items`, data);
+  }
+
+  /**
+   * Update item in purchase (only in draft status)
+   * PATCH /purchases/:id/items/:itemId
+   */
+  updatePurchaseItem(
+    purchaseId: string,
+    itemId: string,
+    data: { quantity: number; pricePerUnit: number }
+  ): Observable<PurchaseItem> {
+    return this.apiService.patch<PurchaseItem>(
+      `${this.BASE_URL}/${purchaseId}/items/${itemId}`,
+      data
+    );
+  }
+
+  /**
+   * Delete item from purchase (only in draft status)
+   * DELETE /purchases/:id/items/:itemId
+   */
+  deletePurchaseItem(purchaseId: string, itemId: string): Observable<{ message: string }> {
+    return this.apiService.delete<{ message: string }>(
+      `${this.BASE_URL}/${purchaseId}/items/${itemId}`
+    );
   }
 }

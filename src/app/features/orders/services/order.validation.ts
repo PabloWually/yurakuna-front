@@ -5,7 +5,7 @@ import { z } from 'zod';
  */
 const OrderItemSchema = z.object({
   productId: z.string().min(1, 'Product ID es requerido'),
-  quantity: z.number().min(1, 'La cantidad debe ser al menos 1'),
+  quantity: z.number().min(0, 'La cantidad debe ser al menos 1'),
 });
 
 /**

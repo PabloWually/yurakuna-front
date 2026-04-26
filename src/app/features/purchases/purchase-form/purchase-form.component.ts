@@ -66,6 +66,7 @@ export class PurchaseFormComponent implements OnInit {
   loading = signal(false);
   isEditMode = signal(false);
   purchaseId: string | null = null;
+  currentPurchaseStatus = signal<string>('');
 
   // Dropdown data
   providers = signal<Provider[]>([]);
@@ -123,19 +124,42 @@ export class PurchaseFormComponent implements OnInit {
   }
 
   /**
-   * Create a new item FormGroup
+   * Create an item FormGroup
    */
   createItemFormGroup(item?: PurchaseItem): FormGroup {
     const product = item?.productId ? this.products().find((p) => p.id === item.productId) : null;
 
     const group = this.fb.group({
+      id: [item?.id || ''], // Item ID (for edit mode)
       productId: [item?.productId || '', Validators.required],
-      quantity: [item?.quantity || 1, [Validators.required, Validators.min(1)]],
+      quantity: [item?.quantity || 1, [Validators.required, Validators.min(0)]],
       pricePerUnit: [
         item?.pricePerUnit ?? product?.pricePerUnit ?? 0,
         [Validators.required, Validators.min(0)],
       ],
       productName: [item?.productName || product?.name || ''],
+    });
+
+    // Listen to product changes to auto-fill price (but keep it editable)
+    group.get('productId')?.valueChanges.subscribe((productId) => {
+      const selectedProduct = this.products().find((p) => p.id === productId);
+      if (selectedProduct) {
+        group.patchValue({
+          pricePerUnit: selectedProduct.pricePerUnit,
+          productName: selectedProduct.name,
+        });
+        this.calculateTotal();
+      }
+      this.refreshSelectedProductIds();
+    });
+
+    // Listen to quantity and pricePerUnit changes to recalculate total
+    group.get('quantity')?.valueChanges.subscribe(() => {
+      this.calculateTotal();
+    });
+
+    group.get('pricePerUnit')?.valueChanges.subscribe(() => {
+      this.calculateTotal();
     });
 
     // Listen to product changes to auto-fill price (but keep it editable)
@@ -279,6 +303,9 @@ export class PurchaseFormComponent implements OnInit {
 
     this.purchaseService.getPurchase(id).subscribe({
       next: (purchase) => {
+        // Store the current status
+        this.currentPurchaseStatus.set(purchase.status);
+
         // Populate form
         this.purchaseForm.patchValue({
           providerId: purchase.providerId,
@@ -306,6 +333,13 @@ export class PurchaseFormComponent implements OnInit {
         this.router.navigate(['/purchases']);
       },
     });
+  }
+
+  /**
+   * Check if items can be edited (purchase is in draft status)
+   */
+  canEditItems(): boolean {
+    return this.isEditMode() && this.currentPurchaseStatus() === 'draft';
   }
 
   /**
@@ -428,6 +462,168 @@ export class PurchaseFormComponent implements OnInit {
    */
   cancel(): void {
     this.router.navigate(['/purchases']);
+  }
+
+  // ===== ITEM MANAGEMENT FOR EDIT MODE =====
+
+  /**
+   * Add item to existing purchase (draft only)
+   */
+  addItemToPurchase(): void {
+    if (!this.purchaseId) return;
+
+    const lastItemForm = this.items.at(this.items.length - 1);
+    if (!lastItemForm || lastItemForm.invalid) {
+      this.snackBar.open('Por favor completa el último producto antes de agregar otro', 'Cerrar', {
+        duration: 3000,
+        panelClass: ['error-snackbar'],
+      });
+      return;
+    }
+
+    const itemData = {
+      productId: lastItemForm.get('productId')?.value,
+      quantity: lastItemForm.get('quantity')?.value,
+      pricePerUnit: lastItemForm.get('pricePerUnit')?.value,
+    };
+
+    this.loading.set(true);
+    this.purchaseService.addPurchaseItem(this.purchaseId, itemData).subscribe({
+      next: (newItem) => {
+        this.loading.set(false);
+        // Reload the purchase to refresh items with IDs from server
+        this.loadPurchase(this.purchaseId!);
+        this.snackBar.open('Producto agregado exitosamente', 'Cerrar', {
+          duration: 3000,
+        });
+      },
+      error: (error) => {
+        this.loading.set(false);
+        const errorMessage = error.error?.message || 'Error al agregar producto';
+        this.snackBar.open(errorMessage, 'Cerrar', {
+          duration: 5000,
+          panelClass: ['error-snackbar'],
+        });
+        console.error('Error adding item:', error);
+      },
+    });
+  }
+
+  /**
+   * Save item in existing purchase (add if new, update if existing - draft only)
+   */
+  updatePurchaseItemAtIndex(index: number): void {
+    if (!this.purchaseId) return;
+
+    const itemControl = this.items.at(index);
+    const itemId = itemControl.get('id')?.value;
+
+    if (itemControl.invalid) {
+      this.snackBar.open('Por favor completa los datos del producto correctamente', 'Cerrar', {
+        duration: 3000,
+        panelClass: ['error-snackbar'],
+      });
+      return;
+    }
+
+    // If no ID, it's a new item - use add
+    if (!itemId) {
+      const itemData = {
+        productId: itemControl.get('productId')?.value,
+        quantity: +itemControl.get('quantity')?.value,
+        pricePerUnit: +itemControl.get('pricePerUnit')?.value,
+      };
+
+      this.loading.set(true);
+      this.purchaseService.addPurchaseItem(this.purchaseId, itemData).subscribe({
+        next: (newItem) => {
+          this.loading.set(false);
+          // Reload the purchase to refresh items with IDs from server
+          this.loadPurchase(this.purchaseId!);
+          this.snackBar.open('Producto agregado exitosamente', 'Cerrar', {
+            duration: 3000,
+          });
+        },
+        error: (error) => {
+          this.loading.set(false);
+          const errorMessage = error.error?.message || 'Error al agregar producto';
+          this.snackBar.open(errorMessage, 'Cerrar', {
+            duration: 5000,
+            panelClass: ['error-snackbar'],
+          });
+          console.error('Error adding item:', error);
+        },
+      });
+      return;
+    }
+
+    // If has ID, it's an existing item - use update
+    const itemData = {
+      quantity: +itemControl.get('quantity')?.value,
+      pricePerUnit: +itemControl.get('pricePerUnit')?.value,
+    };
+
+    this.loading.set(true);
+    this.purchaseService.updatePurchaseItem(this.purchaseId, itemId, itemData).subscribe({
+      next: () => {
+        this.loading.set(false);
+        this.snackBar.open('Producto actualizado exitosamente', 'Cerrar', {
+          duration: 3000,
+        });
+      },
+      error: (error) => {
+        this.loading.set(false);
+        const errorMessage = error.error?.message || 'Error al actualizar producto';
+        this.snackBar.open(errorMessage, 'Cerrar', {
+          duration: 5000,
+          panelClass: ['error-snackbar'],
+        });
+        console.error('Error updating item:', error);
+      },
+    });
+  }
+
+  /**
+   * Delete item from existing purchase (draft only)
+   */
+  deletePurchaseItemAtIndex(index: number): void {
+    if (!this.purchaseId) return;
+
+    const itemControl = this.items.at(index);
+    const itemId = itemControl.get('id')?.value;
+
+    if (!itemId) {
+      this.snackBar.open('No se puede eliminar este producto', 'Cerrar', {
+        duration: 3000,
+        panelClass: ['error-snackbar'],
+      });
+      return;
+    }
+
+    if (!confirm('¿Estás seguro de que deseas eliminar este producto?')) {
+      return;
+    }
+
+    this.loading.set(true);
+    this.purchaseService.deletePurchaseItem(this.purchaseId, itemId).subscribe({
+      next: () => {
+        this.loading.set(false);
+        // Reload the purchase to refresh items
+        this.loadPurchase(this.purchaseId!);
+        this.snackBar.open('Producto eliminado exitosamente', 'Cerrar', {
+          duration: 3000,
+        });
+      },
+      error: (error) => {
+        this.loading.set(false);
+        const errorMessage = error.error?.message || 'Error al eliminar producto';
+        this.snackBar.open(errorMessage, 'Cerrar', {
+          duration: 5000,
+          panelClass: ['error-snackbar'],
+        });
+        console.error('Error deleting item:', error);
+      },
+    });
   }
 
   /**

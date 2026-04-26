@@ -4,6 +4,7 @@ import { ApiService } from '../../../core/services/api.service';
 import {
   Delivery,
   DeliveryWithItems,
+  DeliveryItem,
   CreateDeliveryRequest,
   UpdateDeliveryRequest,
   Criteria,
@@ -54,5 +55,43 @@ export class DeliveryService {
    */
   deleteDelivery(id: string): Observable<void> {
     return this.api.delete<void>(`${this.BASE_PATH}/${id}`);
+  }
+
+  // ===== ITEM MANAGEMENT =====
+
+  /**
+   * Add item to delivery (only in pending status)
+   * POST /deliveries/:id/items
+   */
+  addDeliveryItem(
+    deliveryId: string,
+    data: { orderItemId: string; productId: string; quantity: number }
+  ): Observable<DeliveryItem> {
+    return this.api.post<DeliveryItem>(`${this.BASE_PATH}/${deliveryId}/items`, data);
+  }
+
+  /**
+   * Update item in delivery (only in pending status)
+   * PATCH /deliveries/:id/items/:itemId
+   */
+  updateDeliveryItem(
+    deliveryId: string,
+    itemId: string,
+    data: { quantity: number }
+  ): Observable<DeliveryItem> {
+    return this.api.patch<DeliveryItem>(
+      `${this.BASE_PATH}/${deliveryId}/items/${itemId}`,
+      data
+    );
+  }
+
+  /**
+   * Delete item from delivery (only in pending status)
+   * DELETE /deliveries/:id/items/:itemId
+   */
+  deleteDeliveryItem(deliveryId: string, itemId: string): Observable<{ message: string }> {
+    return this.api.delete<{ message: string }>(
+      `${this.BASE_PATH}/${deliveryId}/items/${itemId}`
+    );
   }
 }
